@@ -88,7 +88,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 	stdoutPartHeader := textproto.MIMEHeader{}
 	stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].Filename)
-	stdoutPartHeader.Add("Content-Disposition", jsonDisp)
+	stdoutPartHeader.Add("Content-Disposition", stdoutDisp)
 	stdoutPartHeader.Add("Content-Type", "text/plain")
 	stdoutPart, err := writer.CreatePart(stdoutPartHeader)
 
@@ -101,7 +101,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 	stderrPartHeader := textproto.MIMEHeader{}
 	stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].Filename)
-	stderrPartHeader.Add("Content-Disposition", jsonDisp)
+	stderrPartHeader.Add("Content-Disposition", stderrDisp)
 	stderrPartHeader.Add("Content-Type", "text/plain")
 	stderrPart, err := writer.CreatePart(stderrPartHeader)
 
