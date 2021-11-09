@@ -67,26 +67,26 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 	msg := &discordMessage{
-		Content: "embeds"
+		Content: "embeds",
 	}
 
 	if ctx.Execution.Failed {
 		embed := &discordEmbed{
 			Title: "Job Failed",
 			Description: fmt.Sprintf("Job `$q` failed, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
-			Color: 0xFF0000
+			Color: 0xFF0000,
 		}
 	} else if ctx.Execution.Skipped {
 		embed := &discordEmbed{
 			Title: "Job Skipped",
 			Description: fmt.Sprintf("Job `$q` was skipped", ctx.Job.GetName()),
-			Color: 0x555555
+			Color: 0x555555,
 		}
 	} else {
 		embed := &discordEmbed{
 			Title: "Job Succeeded",
 			Description: fmt.Sprintf("Job `$q` succeeded, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
-			Color: 0x00FF00
+			Color: 0x00FF00,
 		}
 	}
 
