@@ -60,8 +60,8 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 	r, err := http.PostForm(m.DiscordWebhook, values)
 	if err != nil {
 		ctx.Logger.Errorf("Discord error calling %q error: %q", m.DiscordWebhook, err)
-	} else if r.StatusCode != 200 {
-		ctx.Logger.Errorf("Slack error non-200 status code calling %q", m.DiscordWebhook)
+	} else if r.StatusCode < 200 || r.StatusCode > 299 {
+		ctx.Logger.Errorf("Discord error non-200-range status code calling %q (got %d)", m.DiscordWebhook, r.StatusCode)
 	}
 }
 
