@@ -172,7 +172,7 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 			Cmd:          args.GetArgs(j.Command),
 			User:         j.User,
 			Env:          j.Environment,
-			Healthcheck:  docker.HealthConfig{
+			Healthcheck:  &docker.HealthConfig{
 				Test: j.Healthcheck,
 			},
 		},
