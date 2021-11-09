@@ -84,6 +84,8 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		} else if r.StatusCode < 200 || r.StatusCode > 299 {
 			ctx.Logger.Errorf("Discord error non-200-range status code calling %q (got %d)", m.DiscordWebhook, r.StatusCode)
 		}
+
+		return
 	}
 
 	stdoutPartHeader := textproto.MIMEHeader{}
