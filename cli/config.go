@@ -4,11 +4,11 @@ import (
 	"os"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/mcuadros/ofelia/core"
-	"github.com/mcuadros/ofelia/middlewares"
+	"github.com/ereti/ofelia/core"
+	"github.com/ereti/ofelia/middlewares"
 	logging "github.com/op/go-logging"
 
-	defaults "github.com/mcuadros/go-defaults"
+	defaults "github.com/ereti/go-defaults"
 	gcfg "gopkg.in/gcfg.v1"
 )
 
@@ -26,6 +26,7 @@ var IsDockerEnv bool
 type Config struct {
 	Global struct {
 		middlewares.SlackConfig `mapstructure:",squash"`
+		middlewares.DiscordConfig `mapstructure:",squash"`
 		middlewares.SaveConfig  `mapstructure:",squash"`
 		middlewares.MailConfig  `mapstructure:",squash"`
 	}
@@ -144,6 +145,7 @@ func (c *Config) buildLogger() core.Logger {
 
 func (c *Config) buildSchedulerMiddlewares(sh *core.Scheduler) {
 	sh.Use(middlewares.NewSlack(&c.Global.SlackConfig))
+	sh.Use(middlewares.NewDiscord(&c.Global.DiscordConfig))
 	sh.Use(middlewares.NewSave(&c.Global.SaveConfig))
 	sh.Use(middlewares.NewMail(&c.Global.MailConfig))
 }
@@ -153,6 +155,7 @@ type ExecJobConfig struct {
 	core.ExecJob              `mapstructure:",squash"`
 	middlewares.OverlapConfig `mapstructure:",squash"`
 	middlewares.SlackConfig   `mapstructure:",squash"`
+	middlewares.DiscordConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
@@ -160,6 +163,7 @@ type ExecJobConfig struct {
 func (c *ExecJobConfig) buildMiddlewares() {
 	c.ExecJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.ExecJob.Use(middlewares.NewSlack(&c.SlackConfig))
+	c.ExecJob.Use(middlewares.NewDiscord(&c.DiscordConfig))
 	c.ExecJob.Use(middlewares.NewSave(&c.SaveConfig))
 	c.ExecJob.Use(middlewares.NewMail(&c.MailConfig))
 }
@@ -169,6 +173,7 @@ type RunServiceConfig struct {
 	core.RunServiceJob        `mapstructure:",squash"`
 	middlewares.OverlapConfig `mapstructure:",squash"`
 	middlewares.SlackConfig   `mapstructure:",squash"`
+	middlewares.DiscordConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
@@ -177,6 +182,7 @@ type RunJobConfig struct {
 	core.RunJob               `mapstructure:",squash"`
 	middlewares.OverlapConfig `mapstructure:",squash"`
 	middlewares.SlackConfig   `mapstructure:",squash"`
+	middlewares.DiscordConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
@@ -184,6 +190,7 @@ type RunJobConfig struct {
 func (c *RunJobConfig) buildMiddlewares() {
 	c.RunJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.RunJob.Use(middlewares.NewSlack(&c.SlackConfig))
+	c.RunJob.Use(middlewares.NewDiscord(&c.DiscordConfig))
 	c.RunJob.Use(middlewares.NewSave(&c.SaveConfig))
 	c.RunJob.Use(middlewares.NewMail(&c.MailConfig))
 }
@@ -193,6 +200,7 @@ type LocalJobConfig struct {
 	core.LocalJob             `mapstructure:",squash"`
 	middlewares.OverlapConfig `mapstructure:",squash"`
 	middlewares.SlackConfig   `mapstructure:",squash"`
+	middlewares.DiscordConfig   `mapstructure:",squash"`
 	middlewares.SaveConfig    `mapstructure:",squash"`
 	middlewares.MailConfig    `mapstructure:",squash"`
 }
@@ -200,6 +208,7 @@ type LocalJobConfig struct {
 func (c *LocalJobConfig) buildMiddlewares() {
 	c.LocalJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.LocalJob.Use(middlewares.NewSlack(&c.SlackConfig))
+	c.LocalJob.Use(middlewares.NewDiscord(&c.DiscordConfig))
 	c.LocalJob.Use(middlewares.NewSave(&c.SaveConfig))
 	c.LocalJob.Use(middlewares.NewMail(&c.MailConfig))
 }
@@ -207,6 +216,7 @@ func (c *LocalJobConfig) buildMiddlewares() {
 func (c *RunServiceConfig) buildMiddlewares() {
 	c.RunServiceJob.Use(middlewares.NewOverlap(&c.OverlapConfig))
 	c.RunServiceJob.Use(middlewares.NewSlack(&c.SlackConfig))
+	c.RunServiceJob.Use(middlewares.NewDiscord(&c.DiscordConfig))
 	c.RunServiceJob.Use(middlewares.NewSave(&c.SaveConfig))
 	c.RunServiceJob.Use(middlewares.NewMail(&c.MailConfig))
 }

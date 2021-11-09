@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mcuadros/ofelia/core"
+	"github.com/ereti/ofelia/core"
 )
 
 var (

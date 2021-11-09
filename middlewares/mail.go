@@ -11,7 +11,7 @@ import (
 
 	"gopkg.in/gomail.v2"
 
-	"github.com/mcuadros/ofelia/core"
+	"github.com/ereti/ofelia/core"
 )
 
 // MailConfig configuration for the Mail middleware
