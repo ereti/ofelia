@@ -173,7 +173,7 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 			User:         j.User,
 			Env:          j.Environment,
 			Healthcheck:  docker.HealthConfig{
-				Test: j.Healthcheck
+				Test: j.Healthcheck,
 			},
 		},
 		NetworkingConfig: &docker.NetworkingConfig{},
