@@ -3,9 +3,8 @@ package middlewares
 import (
 	"encoding/json"
 	"fmt"
+	"bytes"
 	"net/http"
-	"net/url"
-	"path/filepath"
 	"mime/multipart"
 	"net/textproto"
 
@@ -88,7 +87,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 	}
 
 	stdoutPartHeader := textproto.MimeHeader{}
-	stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].filename)
+	stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].Filename)
 	stdoutPartHeader.Add("Content-Disposition", jsonDisp)
 	stdoutPartHeader.Add("Content-Type", "text/plain")
 	stdoutPart, err := writer.CreatePart(stdoutPartHeader)
@@ -98,10 +97,10 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		return
 	}
 
-	stdoutPart.Write(ctx.Execution.OutputStream.String())
+	stdoutPart.Write(ctx.Execution.OutputStream.Bytes())
 
 	stderrPartHeader := textproto.MimeHeader{}
-	stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].filename)
+	stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].Filename)
 	stderrPartHeader.Add("Content-Disposition", jsonDisp)
 	stderrPartHeader.Add("Content-Type", "text/plain")
 	stderrPart, err := writer.CreatePart(stderrPartHeader)
@@ -111,7 +110,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		return
 	}
 
-	stderrPart.Write(ctx.Execution.ErrorStream.String())
+	stderrPart.Write(ctx.Execution.ErrorStream.Bytes())
 
 	writer.Close()
 
@@ -154,20 +153,20 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 	}
 
 	if m.DiscordAttachOutput {
-		root := filepath.Join(m.SaveFolder, fmt.Sprintf(
+		name := fmt.Sprintf(
 			"%s_%s",
 			ctx.Execution.Date.Format("20060102_150405"), ctx.Job.GetName(),
-		))
+		)
 
 		msg.Attachments = append(msg.Attachments, discordAttachment{
 			id: 0,
-			filename: fmt.Sprintf("%s.stdout.log", root),
+			filename: fmt.Sprintf("%s.stdout.log", name),
 			description: "Standard out log for the job.",
 		})
 
 		msg.Attachments = append(msg.Attachments, discordAttachment{
 			id: 1,
-			filename: fmt.Sprintf("%s.stderr.log", root),
+			filename: fmt.Sprintf("%s.stderr.log", name),
 			description: "Standard error log for the job.",
 		})
 	}
