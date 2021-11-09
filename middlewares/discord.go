@@ -82,7 +82,7 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			Title: "Job Skipped",
 			Description: fmt.Sprintf("Job `$q` was skipped", ctx.Job.GetName()),
 			Color: 0x555555,
-		}
+		})
 	} else {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Succeeded",
