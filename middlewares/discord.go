@@ -20,7 +20,7 @@ type DiscordConfig struct {
 }
 
 // NewSlack returns a Slack middleware if the given configuration is not empty
-func NewDiscord(c *SDiscordConfig) core.Middleware {
+func NewDiscord(c *DiscordConfig) core.Middleware {
 	var m core.Middleware
 	if !IsEmpty(c) {
 		m = &Discord{*c}
@@ -71,26 +71,27 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 	}
 
 	if ctx.Execution.Failed {
-		embed := &discordEmbed{
+		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Failed",
 			Description: fmt.Sprintf("Job `$q` failed, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
 			Color: 0xFF0000,
-		}
+		})
+
 	} else if ctx.Execution.Skipped {
-		embed := &discordEmbed{
+		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Skipped",
 			Description: fmt.Sprintf("Job `$q` was skipped", ctx.Job.GetName()),
 			Color: 0x555555,
 		}
 	} else {
-		embed := &discordEmbed{
+		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Succeeded",
 			Description: fmt.Sprintf("Job `$q` succeeded, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
 			Color: 0x00FF00,
-		}
+		})
 	}
 
-	msg.Embeds = append(msg.Embeds, embed)
+
 
 	return msg
 }
