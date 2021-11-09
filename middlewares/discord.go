@@ -114,7 +114,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 	writer.Close()
 
-	r, err := http.Post(m.DiscordWebhook, writer.FormDataContentType(), &body)
+	r, err := http.Post(m.DiscordWebhook, writer.FormDataContentType(), body)
 	if err != nil {
 		ctx.Logger.Errorf("Discord error calling %q error: %q", m.DiscordWebhook, err)
 	} else if r.StatusCode < 200 || r.StatusCode > 299 {
@@ -195,7 +195,7 @@ type discordEmbedField struct {
 }
 
 type discordAttachment struct {
-	Id 	string	`json:"id"`
+	Id 	int8	`json:"id"`
 	Filename string `json:"filename"`
 	Description string `json:"description,omitempty"`
 }
