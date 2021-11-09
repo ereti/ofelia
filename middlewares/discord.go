@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"mime/multipart"
+	"net/textproto"
 
 	"github.com/ereti/ofelia/core"
 )
@@ -17,6 +20,7 @@ var (
 type DiscordConfig struct {
 	DiscordWebhook     string `gcfg:"discord-webhook" mapstructure:"discord-webhook"`
 	DiscordOnlyOnError bool   `gcfg:"discord-only-on-error" mapstructure:"discord-only-on-error"`
+	DiscordAttachOutput bool `gcfg:"discord-attach-output" mapstructure:"discord-attach-output"`
 }
 
 // NewSlack returns a Slack middleware if the given configuration is not empty
@@ -53,11 +57,65 @@ func (m *Discord) Run(ctx *core.Context) error {
 }
 
 func (m *Discord) pushMessage(ctx *core.Context) {
-	values := make(url.Values, 0)
-	content, _ := json.Marshal(m.buildMessage(ctx))
-	values.Add(discordPayloadVar, string(content))
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
 
-	r, err := http.PostForm(m.DiscordWebhook, values)
+	jsonPartHeader := textproto.MimeHeader{}
+	jsonDisp := fmt.Sprintf("form-data; name=\"%s\"", discordPayloadVar)
+	jsonPartHeader.Add("Content-Disposition", jsonDisp)
+	jsonPartHeader.Add("Content-Type", "application/json")
+	jsonPart, err := writer.CreatePart(jsonPartHeader)
+
+	if err != nil {
+		ctx.Logger.Errorf("Error creating json part for Discord")
+		return
+	}
+
+	msg := m.buildMessage(ctx)
+
+	content, _ := json.Marshal(msg)
+	jsonPart.Write(content)
+
+	if ctx.Execution.Skipped || !m.DiscordAttachOutput {
+		writer.Close()
+
+		r, err := http.Post(m.DiscordWebhook, writer.FormDataContentType(), &body)
+		if err != nil {
+			ctx.Logger.Errorf("Discord error calling %q error: %q", m.DiscordWebhook, err)
+		} else if r.StatusCode < 200 || r.StatusCode > 299 {
+			ctx.Logger.Errorf("Discord error non-200-range status code calling %q (got %d)", m.DiscordWebhook, r.StatusCode)
+		}
+	}
+
+	stdoutPartHeader := textproto.MimeHeader{}
+	stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].filename)
+	stdoutPartHeader.Add("Content-Disposition", jsonDisp)
+	stdoutPartHeader.Add("Content-Type", "text/plain")
+	stdoutPart, err := writer.CreatePart(stdoutPartHeader)
+
+	if err != nil {
+		ctx.Logger.Errorf("Error creating stdout part for Discord")
+		return
+	}
+
+	stdoutPart.Write(ctx.Execution.OutputStream.String())
+
+	stderrPartHeader := textproto.MimeHeader{}
+	stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].filename)
+	stderrPartHeader.Add("Content-Disposition", jsonDisp)
+	stderrPartHeader.Add("Content-Type", "text/plain")
+	stderrPart, err := writer.CreatePart(stderrPartHeader)
+
+	if err != nil {
+		ctx.Logger.Errorf("Error creating stderr part for Discord")
+		return
+	}
+
+	stderrPart.Write(ctx.Execution.ErrorStream.String())
+
+	writer.Close()
+
+	r, err := http.Post(m.DiscordWebhook, writer.FormDataContentType(), &body)
 	if err != nil {
 		ctx.Logger.Errorf("Discord error calling %q error: %q", m.DiscordWebhook, err)
 	} else if r.StatusCode < 200 || r.StatusCode > 299 {
@@ -69,6 +127,17 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 	msg := &discordMessage{
 	}
 
+	if ctx.Execution.Skipped {
+		msg.Embeds = append(msg.Embeds, discordEmbed{
+			Title: "Job Skipped",
+			Description: fmt.Sprintf("Job `%q` was skipped", ctx.Job.GetName()),
+			Color: 0x555555,
+		})
+
+		return msg
+	}
+
+
 	if ctx.Execution.Failed {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Failed",
@@ -76,12 +145,6 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			Color: 0xFF0000,
 		})
 
-	} else if ctx.Execution.Skipped {
-		msg.Embeds = append(msg.Embeds, discordEmbed{
-			Title: "Job Skipped",
-			Description: fmt.Sprintf("Job `%q` was skipped", ctx.Job.GetName()),
-			Color: 0x555555,
-		})
 	} else {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Succeeded",
@@ -90,7 +153,24 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 		})
 	}
 
+	if m.DiscordAttachOutput {
+		root := filepath.Join(m.SaveFolder, fmt.Sprintf(
+			"%s_%s",
+			ctx.Execution.Date.Format("20060102_150405"), ctx.Job.GetName(),
+		))
 
+		msg.Attachments = append(msg.Attachments, discordAttachment{
+			id: 0,
+			filename: fmt.Sprintf("%s.stdout.log", root),
+			description: "Standard out log for the job.",
+		})
+
+		msg.Attachments = append(msg.Attachments, discordAttachment{
+			id: 1,
+			filename: fmt.Sprintf("%s.stderr.log", root),
+			description: "Standard error log for the job.",
+		})
+	}
 
 	return msg
 }
@@ -98,6 +178,7 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 type discordMessage struct {
 	Content     string          `json:"content,omitempty"`
 	Embeds		[]discordEmbed	`json:"embeds,omitempty"`
+	Attachments []discordAttachment `json"attachments,omitempty`
 }
 
 type discordEmbed struct {
@@ -112,6 +193,12 @@ type discordEmbedField struct {
 	Name 	string	`json:"name"`
 	Value	string	`json:"value"`
 	Inline	bool	`json:"inline,omitempty"`
+}
+
+type discordAttachment struct {
+	Id 	string	`json:"id"`
+	Filename string `json:"filename"`
+	Description string `json:"description,omitempty"`
 }
 
 type discordEmbedFooter struct {
