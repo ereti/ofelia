@@ -34,6 +34,7 @@ type RunJob struct {
 	Container   string
 	Volume      []string
 	Environment []string
+	Healthcheck []string `default:"[]"`
 
 	containerID string
 }
@@ -171,6 +172,9 @@ func (j *RunJob) buildContainer() (*docker.Container, error) {
 			Cmd:          args.GetArgs(j.Command),
 			User:         j.User,
 			Env:          j.Environment,
+			Healthcheck:  docker.HealthConfig{
+				Test: j.Healthcheck
+			},
 		},
 		NetworkingConfig: &docker.NetworkingConfig{},
 		HostConfig: &docker.HostConfig{
