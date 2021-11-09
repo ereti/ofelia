@@ -59,7 +59,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 	r, err := http.PostForm(m.DiscordWebhook, values)
 	if err != nil {
-		ctx.Logger.Errorf("Slack error calling %q error: %q", m.DiscordWebhook, err)
+		ctx.Logger.Errorf("Discord error calling %q error: %q", m.DiscordWebhook, err)
 	} else if r.StatusCode != 200 {
 		ctx.Logger.Errorf("Slack error non-200 status code calling %q", m.DiscordWebhook)
 	}
@@ -67,26 +67,25 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 	msg := &discordMessage{
-		Content: "embeds",
 	}
 
 	if ctx.Execution.Failed {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Failed",
-			Description: fmt.Sprintf("Job `$q` failed, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
+			Description: fmt.Sprintf("Job `%q` failed, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
 			Color: 0xFF0000,
 		})
 
 	} else if ctx.Execution.Skipped {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Skipped",
-			Description: fmt.Sprintf("Job `$q` was skipped", ctx.Job.GetName()),
+			Description: fmt.Sprintf("Job `%q` was skipped", ctx.Job.GetName()),
 			Color: 0x555555,
 		})
 	} else {
 		msg.Embeds = append(msg.Embeds, discordEmbed{
 			Title: "Job Succeeded",
-			Description: fmt.Sprintf("Job `$q` succeeded, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
+			Description: fmt.Sprintf("Job `%q` succeeded, took `%s`", ctx.Job.GetName(), ctx.Execution.Duration),
 			Color: 0x00FF00,
 		})
 	}
