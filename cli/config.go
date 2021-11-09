@@ -8,7 +8,7 @@ import (
 	"github.com/ereti/ofelia/middlewares"
 	logging "github.com/op/go-logging"
 
-	defaults "github.com/ereti/go-defaults"
+	defaults "github.com/mcuadros/go-defaults"
 	gcfg "gopkg.in/gcfg.v1"
 )
 
