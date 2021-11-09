@@ -101,18 +101,21 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 	stdoutPart.Write(ctx.Execution.OutputStream.Bytes())
 
-	stderrPartHeader := textproto.MIMEHeader{}
-	stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].Filename)
-	stderrPartHeader.Add("Content-Disposition", stderrDisp)
-	stderrPartHeader.Add("Content-Type", "text/plain")
-	stderrPart, err := writer.CreatePart(stderrPartHeader)
+	//don't bother with stderr if it's empty
+	if ctx.Execution.ErrorStream.TotalWritten() != 0 {
+		stderrPartHeader := textproto.MIMEHeader{}
+		stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].Filename)
+		stderrPartHeader.Add("Content-Disposition", stderrDisp)
+		stderrPartHeader.Add("Content-Type", "text/plain")
+		stderrPart, err := writer.CreatePart(stderrPartHeader)
 
-	if err != nil {
-		ctx.Logger.Errorf("Error creating stderr part for Discord")
-		return
+		if err != nil {
+			ctx.Logger.Errorf("Error creating stderr part for Discord")
+			return
+		}
+
+		stderrPart.Write(ctx.Execution.ErrorStream.Bytes())
 	}
-
-	stderrPart.Write(ctx.Execution.ErrorStream.Bytes())
 
 	writer.Close()
 
@@ -166,11 +169,14 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			Description: "Standard out log for the job.",
 		})
 
-		msg.Attachments = append(msg.Attachments, discordAttachment{
-			Id: 1,
-			Filename: fmt.Sprintf("%s.stderr.log", name),
-			Description: "Standard error log for the job.",
-		})
+		//only bother with stderr if it contains something
+		if ctx.Execution.ErrorStream.TotalWritten() != 0 {
+			msg.Attachments = append(msg.Attachments, discordAttachment{
+				Id: 1,
+				Filename: fmt.Sprintf("%s.stderr.log", name),
+				Description: "Standard error log for the job.",
+			})
+		}
 	}
 
 	return msg
