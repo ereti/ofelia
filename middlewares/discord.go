@@ -88,18 +88,21 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		return
 	}
 
-	stdoutPartHeader := textproto.MIMEHeader{}
-	stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].Filename)
-	stdoutPartHeader.Add("Content-Disposition", stdoutDisp)
-	stdoutPartHeader.Add("Content-Type", "text/plain")
-	stdoutPart, err := writer.CreatePart(stdoutPartHeader)
+	//don't bother with stdout if it's empty
+	if ctx.Execution.OutputStream.TotalWritten() != 0 {
+		stdoutPartHeader := textproto.MIMEHeader{}
+		stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].Filename)
+		stdoutPartHeader.Add("Content-Disposition", stdoutDisp)
+		stdoutPartHeader.Add("Content-Type", "text/plain")
+		stdoutPart, err := writer.CreatePart(stdoutPartHeader)
 
-	if err != nil {
-		ctx.Logger.Errorf("Error creating stdout part for Discord")
-		return
+		if err != nil {
+			ctx.Logger.Errorf("Error creating stdout part for Discord")
+			return
+		}
+
+		stdoutPart.Write(ctx.Execution.OutputStream.Bytes())
 	}
-
-	stdoutPart.Write(ctx.Execution.OutputStream.Bytes())
 
 	//don't bother with stderr if it's empty
 	if ctx.Execution.ErrorStream.TotalWritten() != 0 {
@@ -163,11 +166,13 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			ctx.Execution.Date.Format("20060102_150405"), ctx.Job.GetName(),
 		)
 
-		msg.Attachments = append(msg.Attachments, discordAttachment{
-			Id: 0,
-			Filename: fmt.Sprintf("%s.stdout.log", name),
-			Description: "Standard out log for the job.",
-		})
+		if ctx.Execution.OutputStream.TotalWritten() != 0 {
+			msg.Attachments = append(msg.Attachments, discordAttachment{
+				Id: 0,
+				Filename: fmt.Sprintf("%s.stdout.log", name),
+				Description: "Standard out log for the job.",
+			})
+		}
 
 		//only bother with stderr if it contains something
 		if ctx.Execution.ErrorStream.TotalWritten() != 0 {
