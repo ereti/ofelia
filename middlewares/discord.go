@@ -87,11 +87,13 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 
 		return
 	}
+	
+	i := 0
 
 	//don't bother with stdout if it's empty
 	if ctx.Execution.OutputStream.TotalWritten() != 0 {
 		stdoutPartHeader := textproto.MIMEHeader{}
-		stdoutDisp := fmt.Sprintf("form-data; name=\"files[0]\"; filename=\"%s\"", msg.Attachments[0].Filename)
+		stdoutDisp := fmt.Sprintf("form-data; name=\"files[%d]\"; filename=\"%s\"", i, msg.Attachments[i].Filename)
 		stdoutPartHeader.Add("Content-Disposition", stdoutDisp)
 		stdoutPartHeader.Add("Content-Type", "text/plain")
 		stdoutPart, err := writer.CreatePart(stdoutPartHeader)
@@ -102,12 +104,13 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		}
 
 		stdoutPart.Write(ctx.Execution.OutputStream.Bytes())
+		i++
 	}
 
 	//don't bother with stderr if it's empty
 	if ctx.Execution.ErrorStream.TotalWritten() != 0 {
 		stderrPartHeader := textproto.MIMEHeader{}
-		stderrDisp := fmt.Sprintf("form-data; name=\"files[1]\"; filename=\"%s\"", msg.Attachments[1].Filename)
+		stderrDisp := fmt.Sprintf("form-data; name=\"files[%d]\"; filename=\"%s\"", i, msg.Attachments[i].Filename)
 		stderrPartHeader.Add("Content-Disposition", stderrDisp)
 		stderrPartHeader.Add("Content-Type", "text/plain")
 		stderrPart, err := writer.CreatePart(stderrPartHeader)
@@ -165,19 +168,22 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			"%s_%s",
 			ctx.Execution.Date.Format("20060102_150405"), ctx.Job.GetName(),
 		)
+		
+		i := 0
 
 		if ctx.Execution.OutputStream.TotalWritten() != 0 {
 			msg.Attachments = append(msg.Attachments, discordAttachment{
-				Id: 0,
+				Id: i,
 				Filename: fmt.Sprintf("%s.stdout.log", name),
 				Description: "Standard out log for the job.",
 			})
+			i++
 		}
 
 		//only bother with stderr if it contains something
 		if ctx.Execution.ErrorStream.TotalWritten() != 0 {
 			msg.Attachments = append(msg.Attachments, discordAttachment{
-				Id: 1,
+				Id: i,
 				Filename: fmt.Sprintf("%s.stderr.log", name),
 				Description: "Standard error log for the job.",
 			})
