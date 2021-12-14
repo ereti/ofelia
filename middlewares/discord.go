@@ -88,7 +88,7 @@ func (m *Discord) pushMessage(ctx *core.Context) {
 		return
 	}
 	
-	i := 0
+	i := int8(0)
 
 	//don't bother with stdout if it's empty
 	if ctx.Execution.OutputStream.TotalWritten() != 0 {
@@ -169,7 +169,7 @@ func (m *Discord) buildMessage(ctx *core.Context) *discordMessage {
 			ctx.Execution.Date.Format("20060102_150405"), ctx.Job.GetName(),
 		)
 		
-		i := 0
+		i := int8(0)
 
 		if ctx.Execution.OutputStream.TotalWritten() != 0 {
 			msg.Attachments = append(msg.Attachments, discordAttachment{
